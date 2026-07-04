@@ -1,0 +1,69 @@
+cabal-version:      2.4
+name:               banking-backend
+version:            0.1.0.0
+synopsis:           A small, strongly-typed transaction-processing API
+description:
+  Accepts a raw transaction as JSON, validates and normalizes it, and
+  returns a formatted response. Written to show a particular way of
+  working in Haskell: parse untrusted input into precise domain types
+  (Money, AccountId, Currency, ...) at the boundary via smart
+  constructors, accumulate every validation error instead of stopping
+  at the first one, and let the type checker rule out whole classes of
+  bugs (no floating-point money, no un-validated account ids reaching
+  business logic) by construction.
+license:            MIT
+author:             Koby
+maintainer:         koby@example.com
+category:           Web
+build-type:         Simple
+
+common warnings
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+
+library
+  import:           warnings
+  hs-source-dirs:   src
+  exposed-modules:
+    Banking.Types
+    Banking.Validation
+    Banking.Api
+
+  build-depends:
+    , aeson
+    , base        >=4.14 && <5
+    , http-types
+    , random
+    , scientific
+    , scotty
+    , text
+    , time
+    , wai-cors
+
+  default-language: Haskell2010
+
+executable banking-backend
+  import:           warnings
+  main-is:          Main.hs
+  hs-source-dirs:   app
+  build-depends:
+    , banking-backend
+    , base
+    , scotty
+
+  default-language: Haskell2010
+  ghc-options:      -threaded -rtsopts "-with-rtsopts=-N"
+
+test-suite banking-backend-test
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  main-is:          Spec.hs
+  hs-source-dirs:   test
+  build-depends:
+    , banking-backend
+    , base
+    , HUnit
+    , QuickCheck
+    , scientific
+    , time
+
+  default-language: Haskell2010
