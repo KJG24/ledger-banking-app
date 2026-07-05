@@ -45,7 +45,9 @@ missing fields) gets treated as an actual error.
 ## Quick start
 
 You'll need GHC + Cabal ([ghcup](https://www.haskell.org/ghcup/) is the
-easiest way to get both) and Node 18+.
+easiest way to get both) and Node.js, ideally via
+[nvm](https://github.com/nvm-sh/nvm) — the frontend's `.nvmrc` pins the
+exact version this was built against.
 
 **Backend** (from `backend/`):
 
@@ -70,13 +72,39 @@ ghc -O1 -isrc -iapp -odir build -hidir build -o build/banking-backend app/Main.h
 **Frontend** (from `frontend/`, in another terminal):
 
 ```bash
+nvm install   # reads .nvmrc, installs/switches to Node 22.22.2
+nvm use
 npm install
 npm run dev
 # ➜  Local:   http://localhost:5173/
 ```
 
+If you don't have `nvm`, any Node 18+ works fine — `.nvmrc`/`engines` just
+pin an exact version for reproducibility; `npm` is still what actually
+installs dependencies and runs the dev server.
+
 Open `http://localhost:5173`. The frontend talks to `http://localhost:8080`
 by default; copy `.env.example` to `.env` to point it somewhere else.
+
+### Troubleshooting: `cannot find -lgmp`
+
+If `cabal build` fails partway through with a linker error like:
+
+```
+/usr/bin/ld: cannot find -lgmp: No such file or directory
+```
+
+that's a missing **system** library, not a problem with this project —
+GHC needs the GMP arithmetic library to link anything, and on a fresh
+machine it's often not installed yet. Install it and re-run `cabal build`
+(cabal resumes from where it left off, it doesn't start over):
+
+```bash
+sudo apt-get install libgmp-dev      # Ubuntu/Debian, incl. WSL
+sudo dnf install gmp-devel           # Fedora/RHEL
+sudo pacman -S gmp                   # Arch
+brew install gmp                     # macOS
+```
 
 ## Running the tests
 
@@ -174,6 +202,55 @@ frontend/
       TransactionJournal.tsx  session history, click a row to revisit it
     App.tsx, main.tsx
 ```
+
+## Deploying a live demo
+
+GitHub Pages only serves static files, so the split is: **frontend on
+Pages**, **backend on a host that can run a process**. Deploy the backend
+first — the frontend's build needs its URL.
+
+### 1. Backend → Render
+
+Render's free web-service tier is the one still offering genuinely free,
+no-credit-card hosting as of this writing; Railway and Fly.io have both
+moved to paid-only or trial-credit models. The trade-off: a free Render
+service spins down after 15 minutes of inactivity and takes 30-50 seconds
+to wake back up on the next request. Fine for a portfolio demo, worth
+knowing before you send someone a link.
+
+1. Push this repo to GitHub if you haven't already.
+2. Create a free account at [render.com](https://render.com) (no card
+   required) and connect your GitHub account.
+3. **New > Web Service**, select this repo.
+4. Set:
+   - **Root Directory**: `backend`
+   - **Runtime**: `Docker` (Render should auto-detect the `Dockerfile`)
+   - **Instance Type**: `Free`
+5. Deploy. First build takes a few minutes (compiling GHC dependencies
+   from scratch). Once it's up, note the public URL Render gives you —
+   something like `https://ledger-banking-backend.onrender.com`.
+6. Confirm it's alive: `curl https://<your-url>/api/health` should
+   return `{"status":"ok"}` (give it 30-50 seconds if it's been idle).
+
+A `render.yaml` Blueprint is included at the repo root if you'd rather
+manage this as code — see the comment in that file for a known rough
+edge with monorepo Docker paths before relying on it.
+
+### 2. Frontend → GitHub Pages
+
+1. In the repo's **Settings > Pages**, set **Source** to
+   **GitHub Actions**.
+2. In **Settings > Secrets and variables > Actions > Variables**, add a
+   repository variable named `VITE_API_BASE_URL` set to the backend URL
+   from step 1 (no trailing slash).
+3. Push to `main` (or run the "Deploy frontend to GitHub Pages" workflow
+   manually from the Actions tab). `.github/workflows/deploy-pages.yml`
+   builds the frontend and deploys it automatically.
+4. Your site will be live at `https://<your-username>.github.io/<repo-name>/`.
+
+If you change `VITE_API_BASE_URL` later, re-run the workflow manually —
+it's a build-time value baked into the static bundle, not read at
+runtime.
 
 ## Notes on a few design choices
 

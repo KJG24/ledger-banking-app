@@ -1,0 +1,17 @@
+# Optional infra-as-code path for deploying the backend to Render.
+# See the README's "Deploying the backend" section for the equivalent
+# (and more predictable) manual dashboard steps - start there if this
+# Blueprint doesn't sync cleanly; Render's handling of rootDir + Docker
+# paths in monorepos has some sharp edges that are easier to sidestep by
+# hand than to get exactly right in YAML.
+services:
+  - type: web
+    name: ledger-banking-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8080

@@ -1,0 +1,6 @@
+dist-newstyle/
+build/
+build-test/
+.git/
+*.hi
+*.o

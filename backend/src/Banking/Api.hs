@@ -17,9 +17,6 @@ import Network.Wai.Middleware.Cors
   )
 import Web.Scotty
 
-jsonParseFailed :: ScottyException -> ActionM (Maybe TransactionRequest)
-jsonParseFailed _ = pure Nothing
-
 app :: ScottyM ()
 app = do
   -- The frontend is served from a different origin during local
@@ -57,3 +54,10 @@ app = do
         resp <- liftIO (processTransaction (req :: TransactionRequest) now)
         status (if respStatus resp == Approved then ok200 else badRequest400)
         json resp
+
+-- | scotty >=0.20 reports a failed 'jsonData' parse as a 'ScottyException'
+-- (e.g. MalformedJSON, FailedToParseJSON) rather than a bare Text error.
+-- We don't care which one — any parse failure here just means "tell the
+-- client their request body didn't match the expected shape."
+jsonParseFailed :: ScottyException -> ActionM (Maybe TransactionRequest)
+jsonParseFailed _ = pure Nothing
