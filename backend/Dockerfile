@@ -14,9 +14,15 @@ WORKDIR /opt/build
 # its own Docker layer, and only reruns when dependencies actually change
 # rather than on every source edit.
 COPY banking-backend.cabal ./
+COPY src ./src
+COPY app ./app
+COPY test ./test
+
+RUN cabal update
 RUN cabal update && cabal build exe:banking-backend --only-dependencies -j4
 
 COPY . .
+
 RUN cabal build exe:banking-backend
 RUN cp "$(cabal list-bin exe:banking-backend)" /opt/build/banking-backend-bin
 
