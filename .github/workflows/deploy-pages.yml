@@ -6,8 +6,6 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/deploy-pages.yml"
-  # Lets you trigger a redeploy manually from the Actions tab, e.g. after
-  # changing the VITE_API_BASE_URL repository variable below.
   workflow_dispatch:
 
 permissions:
@@ -15,7 +13,6 @@ permissions:
   pages: write
   id-token: write
 
-# Only one Pages deployment at a time; a new push cancels an in-flight one.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -39,12 +36,7 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          # Set this as a repository variable (Settings > Secrets and
-          # variables > Actions > Variables) once the backend is deployed -
-          # e.g. https://ledger-banking-backend.onrender.com
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          # GitHub Pages project sites live at /<repo-name>/, not at the
-          # domain root - see vite.config.ts for why this matters.
           BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
 
